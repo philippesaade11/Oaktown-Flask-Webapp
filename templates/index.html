@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.min.css" />
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-dispatch/1.0.3/d3-dispatch.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-selection/1.2.0/d3-selection.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.23.0/moment.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
+		<script src="/static/script.js"></script>
+		<style>
+			a {
+				cursor: pointer;
+			}
+    		#bg {
+    		  position: fixed;
+    		  top: 0;
+    		  left: 0;
+    		  min-width: 100%;
+    		  min-height: 100%;
+    		}
+			* {
+				font-size: 100% !important;
+			}
+			h4, .navbar-header {
+				font-size: 125% !important;
+			}
+			.day.disabled {
+				color: red !important;
+			}
+
+			@media screen and (max-width: 992px) {
+				* {
+					font-size: 100% !important;
+				}
+				#calendar > * {
+                    font-size: 2.25vw !important;
+                }
+				h4, .navbar-header {
+					font-size: 130% !important;
+				}
+				.bootstrap-datetimepicker-widget {
+					font-size: 100% !important;
+				}
+			}
+		</style>
+		<script>
+		  checkLogin();
+		  htmls = {};
+
+		  $(document).ready(function(){
+		    if(window.location.hash){
+    		    hash = $('[data-page ='+window.location.hash.substr(1)+']');
+    		    if(hash.length == 1){
+    		        hash.addClass("active");
+    		    } else {
+		            $('[data-page = 1]').addClass("active");
+    		    }
+		    } else {
+		        $('[data-page = 1]').addClass("active");
+		    }
+
+			var hides = $('[data-hide]');
+			var active = $('[data-page].active').data("page");
+			jQuery.each(hides, function(){
+				htmls[$(this).data('hide')] = $(this).html();
+				if($(this).data('hide') != active){
+					$(this).hide();
+					$(this).html("");
+				}
+			});
+
+			$('[data-page]').on('click', function(){
+				$('[data-page].active').removeClass("active");
+				$(this).addClass("active");
+				var hides = $('[data-hide]');
+				var active = $(this).data("page");
+				jQuery.each(hides, function(){
+					$(this).hide();
+					$(this).html("");
+					if($(this).data('hide') == active){
+						$(this).show();
+						$(this).html(htmls[$(this).data('hide')]);
+					}
+				});
+			});
+		  });
+		</script>
+	</head>
+	<body>
+		<nav class="navbar navbar-inverse" style="z-index: 1;">
+		  <div class="container-fluid">
+			<div class="navbar-header">
+			  <a class="navbar-brand">Lehfed Country</a>
+			</div>
+			<ul class="nav navbar-nav">
+			  <li data-page="1"><a>Add Reservation</a></li>
+			  <li data-page="2"><a>View Reservations</a></li>
+			  <li data-page="3"><a>Add Costs</a></li>
+			</ul>
+			<ul class="nav navbar-nav navbar-right">
+			  <li onclick="logout()"><a><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+			</ul>
+		  </div>
+		</nav>
+
+	    <img src="/static/background.jpg" id="bg" alt="" />
+		<div data-hide="1">{% include 'navbar/addReservation.html'%}</div>
+		<div data-hide="2">{% include 'navbar/viewReservation.html'%}</div>
+		<div data-hide="3">{% include 'navbar/addCosts.html'%}</div>
+	</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+	<head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script src="/static/sha256.js"></script>
+		<script src="/static/script.js"></script>
+		<style>
+			#bg {
+			  position: fixed;
+			  top: 0;
+			  left: 0;
+			  min-width: 100%;
+			  min-height: 100%;
+			}
+			* {
+				font-size: 100% !important;
+			}
+			h4, .navbar-header {
+				font-size: 125% !important;
+			}
+			.day.disabled {
+				color: red !important;
+			}
+
+			@media screen and (max-width: 992px) {
+				* {
+					font-size: 103% !important;
+				}
+				h4, .navbar-header {
+					font-size: 130% !important;
+				}
+				.bootstrap-datetimepicker-widget {
+					font-size: 100% !important;
+				}
+			}
+		</style>
+		<script>
+			$(window).ready(function(){
+				$("#loginform").on('submit', function(event){
+					event.preventDefault();
+					submit();
+				});
+			});
+			function submit(){
+				user = $("#username").val();
+				pass = SHA256($("#password").val());
+				login(user, pass)
+				$("#username").val("");
+				$("#password").val("");
+			}
+		</script>
+	</head>
+	<body>
+		<img src="/static/background.jpg" id="bg" alt="">
+		<div class="col-xs-8 col-xs-offset-2 col-sm-6 col-sm-offset-3" style="margin-top: 50px">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h4>Login</h4>
+				</div>
+				<div class="panel-body">
+					<form id="loginform">
+						<div class="input-group">
+							<span class="input-group-addon"><i class="glyphicon glyphicon-user"></i></span>
+							<input id="username" type="text" class="form-control" name="username" placeholder="Username" required />
+						</div>
+						<div class="input-group">
+							<span class="input-group-addon"><i class="glyphicon glyphicon-lock"></i></span>
+							<input id="password" type="password" class="form-control" name="password" placeholder="Password" required />
+						</div>
+						<div class="form-group">
+							<button type="submit" class="btn btn-primary" style="margin-top: 10px">Login</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

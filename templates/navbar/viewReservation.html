@@ -1,0 +1,404 @@
+<html>
+    <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <link href='/static/packages/core/main.css' rel='stylesheet' />
+    <link href='/static/packages/daygrid/main.css' rel='stylesheet' />
+    <script src='/static/packages/core/main.js'></script>
+    <script src='/static/packages/interaction/main.js'></script>
+    <script src='/static/packages/daygrid/main.js'></script>
+    <style>
+		.input-group-addon {
+			min-width: 150px;
+		}
+		div.form-control {
+			height: 100%;
+		}
+		#loader {
+          border: 12px solid #ddd;
+          border-radius: 50%;
+          border-top: 12px solid #2C3E50;
+          width: 70px;
+          height: 70px;
+          -webkit-animation: spin 2s linear infinite; /* Safari */
+          animation: spin 2s linear infinite;
+          margin: auto;
+        }
+
+        /* Safari */
+        @-webkit-keyframes spin {
+          0% { -webkit-transform: rotate(0deg); }
+          100% { -webkit-transform: rotate(360deg); }
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+	</style>
+	<script>
+		$(function(){
+			$('#date1').datetimepicker({
+				format: 'L'
+			});
+			$('#date3').datetimepicker({
+				format: 'L'
+			});
+			$('#fromdate2').datetimepicker({
+				format: 'L'
+			});
+			$('#todate2').datetimepicker({
+				format: 'L',
+				useCurrent: false
+			});
+			$("#fromdate2").on("dp.change", function (e) {
+				$('#todate2').data("DateTimePicker").minDate(e.date);
+			});
+			$("#todate2").on("dp.change", function (e) {
+				$('#fromdate2').data("DateTimePicker").maxDate(e.date);
+			});
+
+            $("#deleteBtn").click(deleteRes);
+            $("#saveBtn").click(function(){
+                $("#changeResform").submit();
+            });
+            $("#changeResform").on('submit', function(event){
+				console.log("submitted");
+				event.preventDefault();
+				saveRes();
+			});
+
+			$("#loader").css("visibility", "hidden");
+			$("#loader").css("height", 0);
+
+            start();
+		});
+
+		function start(){
+		    var calendarEl = document.getElementById('calendar');
+		    var calendar = new FullCalendar.Calendar(calendarEl, {
+              plugins: [ 'interaction', 'dayGrid' ],
+              defaultDate: convert((new Date()).getTime()/1000),
+              events: []
+            });
+            range = calendar.state.dateProfile.activeRange;
+            show(parseInt(range.start.getTime()/1000), parseInt(range.end.getTime()/1000));
+		}
+
+		function loadCalendar(events, date){
+		    $("#results").html("<div id='calendar'></div>");
+		    var calendarEl = document.getElementById('calendar');
+
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+              plugins: [ 'interaction', 'dayGrid' ],
+              header: {
+                left: 'prev, next',
+                center: 'title',
+                right: 'today'
+              },
+              defaultDate: date,
+              navLinks: true,
+              eventLimit: true,
+              aspectRatio: 0.9,
+              events: events,
+              eventClick: function(arg) {
+                showModel(arg.event._def.extendedProps.data);
+              }
+            });
+
+            calendar.render();
+            $(".fc-prev-button").click(function(){
+                range = calendar.state.dateProfile.activeRange;
+                show(parseInt(range.start.getTime()/1000), parseInt(range.end.getTime()/1000));
+            })
+            $(".fc-next-button").click(function(){
+                range = calendar.state.dateProfile.activeRange;
+                show(parseInt(range.start.getTime()/1000), parseInt(range.end.getTime()/1000));
+            })
+            $(".fc-today-button").click(function(){
+                range = calendar.state.dateProfile.activeRange;
+                show(parseInt(range.start.getTime()/1000), parseInt(range.end.getTime()/1000));
+            })
+		}
+
+		function show(fromDate, toDate){
+			$("#loader").css("visibility", "");
+			$("#loader").css("height", 70);
+			$("#results").css("visibility", "hidden");
+			$("#results").css("height", 0);
+
+			$.ajax({
+				url: "http://lehfedcountry.pythonanywhere.com/viewReservation",
+				type: "POST",
+				headers: {
+					"x-access-token": localStorage.getItem("token")
+				},
+				data: {
+					"fromDate": fromDate,
+					"toDate": toDate
+				},
+				success: function(data){
+				    events = [];
+					for(i in data){
+					    obj = {};
+					    if(data[i].type == "Picnic")
+    						obj = {
+    						    "title" : data[i].name,
+    						    "start": convert(data[i].date),
+    						    "color": "#cc5555",
+    						    "data": data[i]
+    						};
+    					else if(data[i].type == "Resto")
+    						obj = {
+    						    "title" : data[i].name,
+    						    "start": convert(data[i].date),
+    						    "color": "#55cc55",
+    						    "data": data[i]
+    						};
+    					else if(data[i].type == "Camping")
+    						obj = {
+    						    "title" : data[i].name,
+    						    "start": convert(data[i].fromDate),
+    						    "end": convert(data[i].toDate+86400),
+    						    "color": "#5555cc",
+    						    "data": data[i]
+    						};
+    					events.push(obj);
+					}
+
+					loadCalendar(events, convert((fromDate+toDate)/2));
+					$("#loader").css("visibility", "hidden");
+					$("#loader").css("height", 0);
+			        $("#results").css("visibility", "");
+			        $("#results").css("height", "auto");
+				},
+				error: function(data){
+					if(data.responseJSON != null){
+						alert(data.responseJSON.error);
+					}
+				}
+			});
+		}
+
+		function showModel(data){
+			$("#name").val(data.name);
+			$("#phone").val(data.phone);
+			$("#numPeople").val(data.numPeople);
+			$("#added-by").html(data.added_by);
+			$("#added-date").html(convert(data.added_date));
+			$("#moreInfo").val(data.moreInfo);
+			$("#data-id").data("id", data.id);
+			types = $("[data-type]").hide();
+			if(data.type == "Picnic"){
+			    $("[data-type=1]").show();
+				$("#date1").val(convert(data.date));
+				$("#table1").val(data.table);
+				$("#price1").val(parseInt(data.pricePerson));
+				$("#withBBQ1")[0].checked = data.withBBQ;
+			} else if(data.type == "Camping"){
+			    $("[data-type=2]").show();
+				$("#fromdate2").val(convert(data.fromDate));
+				$("#todate2").val(convert(data.toDate));
+				$("#table2").val(data.table);
+				$("#price2").val(parseInt(data.pricePerson));
+				$("#withBBQ2")[0].checked = data.withBBQ;
+				$("#withMatress2")[0].checked = data.withMatress;
+				$("#withTent2")[0].checked = data.withTent;
+				$("#withFood2")[0].checked = data.withFood;
+			} else if(data.type == "Resto"){
+			    $("[data-type=3]").show();
+				$("#date3").val(convert(data.date));
+				$("#table3").val(data.table);
+			}
+			$("#Modal").modal({show: true});
+		}
+
+		function convert(date){
+			d = new Date(date*1000);
+			return (d.getFullYear())+"-"+((d.getMonth()<9)?"0":"")+(d.getMonth()+1)+"-"+((d.getDate()<10)?"0":"")+(d.getDate())
+		}
+
+		function deleteRes(){
+			var result = confirm("Want to delete?");
+			if (result) {
+				$.ajax({
+					url: "http://lehfedcountry.pythonanywhere.com/deleteReservation",
+					type: "POST",
+					headers: {
+						"x-access-token": localStorage.getItem("token")
+					},
+					data: {
+						"id": $("#data-id").data("id"),
+					},
+					success: function(){
+						window.location.hash = "#2";
+						location.reload();
+					},
+					error: function(data){
+						if(data.responseJSON != null){
+							alert(data.responseJSON.error);
+						}
+					}
+				});
+			}
+		}
+
+		function saveRes(){
+		    data = {}
+		    data.id = $("#data-id").data("id");
+			data.name = $("#name").val();
+			data.phone = $("#phone").val();
+			data.numPeople = $("#numPeople").val();
+			data.moreInfo = $("#moreInfo").val();
+			type = $("[data-type]:visible").attr("data-type");
+			if(type == "1"){
+				data.date = parseInt(new Date($("#date1").val()).getTime()/1000);
+			    data.table = $("#table1").val();
+				data.pricePerson = $("#price1").val();
+				data.withBBQ = $("#withBBQ1")[0].checked;
+			} else if(type == "2"){
+				data.fromDate = parseInt(new Date($("#fromdate2").val()).getTime()/1000);
+				data.toDate = parseInt(new Date($("#todate2").val()).getTime()/1000);
+			    data.table = $("#table2").val();
+				data.pricePerson = $("#price2").val();
+				data.withBBQ = $("#withBBQ2")[0].checked;
+				data.withMatress = $("#withMatress2")[0].checked;
+				data.withTent = $("#withTent2")[0].checked;
+				data.withFood = $("#withFood2")[0].checked;
+			} else if(type == "3"){
+				data.date = parseInt(new Date($("#date3").val()).getTime()/1000);
+			    data.table = $("#table3").val();
+			}
+
+		    var result = confirm("Want to change?");
+			if (result) {
+				$.ajax({
+					url: "http://lehfedcountry.pythonanywhere.com/changeReservation",
+					type: "POST",
+					headers: {
+						"x-access-token": localStorage.getItem("token")
+					},
+					data: data,
+					success: function(){
+						window.location.hash = "#2";
+						location.reload();
+					},
+					error: function(data){
+						if(data.responseJSON != null){
+							alert(data.responseJSON.error);
+						}
+					}
+				});
+			}
+		}
+	</script>
+	</head>
+	<body>
+	<div class="col-xs-12 col-md-10 col-md-offset-1" style="margin-top: 50px">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				<h4>View Reservation</h4>
+			</div>
+			<div class="panel-body">
+				<div id='loader'></div>
+				<div id='results'><div id='calendar'></div></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="Modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<form id="changeResform">
+    				<div class="modal-header">
+    					<button type="button" class="close" data-dismiss="modal">&times;</button>
+    					<h4 class="modal-title"></h4>
+    				</div>
+    				<div class="modal-body">
+    				    <input id="data-id" type="hidden"/>
+    					<div class="input-group">
+    						<span class="input-group-addon">Name</span>
+    						<input id="name" type="text" class="form-control" name="name" placeholder="Name" required/>
+    					</div>
+    					<div class="input-group">
+    						<span class="input-group-addon">Phone</span>
+    						<input id="phone" type="text" pattern="[0-9]{8}" class="form-control" name="phone" placeholder="Phone XXXXXXXX" required />
+    					</div>
+    					<div class="input-group">
+    						<span class="input-group-addon"># People</span>
+    						<input id="numPeople" type="number" class="form-control" name="numPeople" placeholder="Number of People" min="1" required />
+    					</div>
+    					<div class="input-group">
+    						<span class="input-group-addon">More Info</span>
+    						<textarea id="moreInfo" class="form-control" rows="5" placeholder="More Information" style="resize: vertical;"></textarea>
+    					</div>
+    					<div data-type="1">
+    						<div class="input-group">
+    						    <span class="input-group-addon">Date</span>
+    							<input id="date1" type="text" class="form-control" name="date1" placeholder="Date" data-required="1" required />
+    						</div>
+    						<div class="input-group">
+    						    <span class="input-group-addon">Table #</span>
+    							<input id="table1" type="text" class="form-control" name="table1" placeholder="Table #" />
+    						</div>
+    						<div class="input-group">
+    						    <span class="input-group-addon">Price</span>
+    							<input id="price1" type="number" class="form-control" name="price1" placeholder="Price" value="5000" data-required="1" required />
+    						</div>
+    						<div class="input-group col-xs-offset-1 col-xs-10">
+    							<label class="checkbox-inline"><input id="withBBQ1" type="checkbox" name="withBBQ1" checked="checked"/>With BBQ</label>
+    						</div>
+    					</div>
+    					<div data-type="2">
+    						<div class="input-group">
+    						    <span class="input-group-addon">Date From</span>
+    							<input id="fromdate2" type='text' class="form-control" name="fromdate2" placeholder="From Date" data-required="1" required />
+    						</div>
+    						<div class="input-group">
+    						    <span class="input-group-addon">Date To</span>
+    							<input id="todate2" type="text" class="form-control" name="todate2" placeholder="To Date" data-required="1" required />
+    						</div>
+    						<div class="input-group">
+    						    <span class="input-group-addon">Table #</span>
+    							<input id="table2" type="text" class="form-control" name="table2" placeholder="Table #" />
+    						</div>
+    						<div class="input-group">
+    						    <span class="input-group-addon">Price</span>
+    							<input id="price2" type="number" class="form-control" name="price2" placeholder="Price" value="15000" data-required="1" required />
+    						</div>
+    						<div class="input-group col-xs-offset-1 col-xs-11">
+    							<label class="checkbox-inline"><input id="withBBQ2" type="checkbox" name="withBBQ2" checked="checked"/>With BBQ</label>
+    							<label class="checkbox-inline"><input id="withTent2" type="checkbox" name="withTent2" checked="checked"/>With Tent</label>
+    							<label class="checkbox-inline"><input id="withMatress2" type="checkbox" name="withMatress2" checked="checked"/>With Matress</label>
+    							<label class="checkbox-inline"><input id="withFood2" type="checkbox" name="withFood2" checked="checked"/>With Food</label>
+    						</div>
+    					</div>
+    					<div data-type="3">
+    						<div class="input-group">
+    						    <span class="input-group-addon">Date</span>
+    							<input id="date3" type="text" class="form-control" name="date3" placeholder="Date" data-required="1" required />
+    						</div>
+    						<div class="input-group">
+    						    <span class="input-group-addon">Table #</span>
+    							<input id="table3" type="text" class="form-control" name="table3" placeholder="Table #" />
+    						</div>
+    					</div>
+    					<br />
+    					<div class="input-group">
+    						<span class="input-group-addon">Added By</span>
+    						<div id="added-by" class="form-control">Added By</div>
+    					</div>
+    					<div class="input-group">
+    						<span class="input-group-addon">Added Date</span>
+    						<div id="added-date" class="form-control">Added Date</div>
+    					</div>
+    				</div>
+    				<div class="modal-footer">
+    					<button id="saveBtn" type="button" class="btn btn-primary">Save</button>
+    					<button id="deleteBtn" type="button" class="btn btn-danger">Delete</button>
+    				</div>
+				</form>
+			</div>
+		</div>
+	</div>
+	</body>
+</html>
